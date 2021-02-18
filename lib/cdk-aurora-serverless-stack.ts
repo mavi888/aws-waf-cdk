@@ -2,10 +2,11 @@ import * as cdk from '@aws-cdk/core';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as rds from '@aws-cdk/aws-rds'; 
-import * as apigw from '@aws-cdk/aws-apigatewayv2';
-import * as integrations from '@aws-cdk/aws-apigatewayv2-integrations';
+import * as apigw from '@aws-cdk/aws-apigateway';
 
 export class CdkAuroraServerlessStack extends cdk.Stack {
+  apiGatewayARN:string;
+  
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -37,16 +38,18 @@ export class CdkAuroraServerlessStack extends cdk.Stack {
     // Grant access to the cluster from the Lambda function
     cluster.grantDataApiAccess(postFn);
   
-     // create the API Gateway with one method and path
-     let api = new apigw.HttpApi(this, 'Endpoint', {
-      defaultIntegration: new integrations.LambdaProxyIntegration({
-        handler: postFn
-      })
-    });
+    // create the API Gateway with one method and path
+    const api = new apigw.RestApi(this, "hello-api");
+
+    const hello = api.root.addResource('hello');
+    hello.addMethod('ANY', new apigw.LambdaIntegration(postFn));
 
     new cdk.CfnOutput(this, "HTTP API URL", {
       value: api.url ?? "Something went wrong with the deploy",
     });
+
+     //store the gateway ARN for use with our WAF stack
+     this.apiGatewayARN = `arn:aws:apigateway:${cdk.Stack.of(this).region}::/restapis/${api.restApiId}/stages/${api.deploymentStage.stageName}`
 
   }
 }

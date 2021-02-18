@@ -6,7 +6,7 @@ import getTodo from './getTodo';
 exports.handler = async (event:any) => {
     console.log(event);
 
-    switch (event.requestContext.http.method) {
+    switch (event.httpMethod) {
         case 'POST': {
             console.log('POST')
             const task = JSON.parse(event.body);
